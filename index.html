@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crypto.ai</title>
+
+  <!-- Telegram's official JS library — gives us theme colors, user info,
+       and lets the page behave like a native Telegram screen -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    /* We use Telegram's theme variables so the app matches whatever
+       theme (light/dark) the user has set in their Telegram app */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--tg-theme-bg-color, #ffffff);
+      color: var(--tg-theme-text-color, #000000);
+      margin: 0;
+      padding: 16px;
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      color: var(--tg-theme-hint-color, #999999);
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+    .asset-card {
+      background: var(--tg-theme-secondary-bg-color, #f2f2f2);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .asset-symbol {
+      font-weight: 600;
+      font-size: 16px;
+    }
+    .asset-name {
+      color: var(--tg-theme-hint-color, #999999);
+      font-size: 12px;
+    }
+    .loading, .error {
+      text-align: center;
+      color: var(--tg-theme-hint-color, #999999);
+      margin-top: 40px;
+    }
+    .error { color: #e74c3c; }
+  </style>
+</head>
+<body>
+  <h1>Crypto.ai</h1>
+  <p class="subtitle">Evidence-based crypto research</p>
+
+  <div id="content" class="loading">Loading assets...</div>
+
+  <script>
+    // Tell Telegram we're ready — this removes the loading spinner
+    // Telegram shows before our page finishes rendering.
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand(); // opens the mini app at full height instead of half-screen
+
+    // IMPORTANT: change this to your real API URL once deployed.
+    // For local testing, this points to your FastAPI server running on
+    // your machine.
+    const API_BASE_URL = "http://localhost:8000";
+
+    async function loadAssets() {
+      const contentEl = document.getElementById("content");
+      try {
+        const response = await fetch(`${API_BASE_URL}/assets`);
+        if (!response.ok) throw new Error(`API returned ${response.status}`);
+        const assets = await response.json();
+
+        if (assets.length === 0) {
+          contentEl.innerHTML = `<div class="loading">No assets tracked yet.</div>`;
+          return;
+        }
+
+        contentEl.innerHTML = assets.map(asset => `
+          <div class="asset-card">
+            <div>
+              <div class="asset-symbol">${asset.symbol}</div>
+              <div class="asset-name">${asset.name}</div>
+            </div>
+          </div>
+        `).join("");
+      } catch (err) {
+        contentEl.innerHTML = `<div class="error">Failed to load assets: ${err.message}</div>`;
+      }
+    }
+
+    loadAssets();
+  </script>
+</body>
+</html>
