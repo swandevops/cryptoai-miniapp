@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crypto.ai</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Financial Research</title>
 
   <!-- Telegram's official JS library — gives us theme colors, user info,
        and lets the page behave like a native Telegram screen -->
@@ -28,6 +31,40 @@
       font-size: 13px;
       margin-bottom: 20px;
     }
+
+    /* Category buttons on the home screen */
+    .category-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      background: var(--tg-theme-secondary-bg-color, #f2f2f2);
+      color: var(--tg-theme-text-color, #000000);
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 10px;
+      font-size: 16px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .category-btn .emoji {
+      font-size: 22px;
+    }
+    .category-btn .arrow {
+      margin-left: auto;
+      color: var(--tg-theme-hint-color, #999999);
+    }
+
+    .back-btn {
+      background: none;
+      border: none;
+      color: var(--tg-theme-link-color, #2481cc);
+      font-size: 15px;
+      padding: 0 0 16px 0;
+      cursor: pointer;
+    }
+
     .asset-card {
       background: var(--tg-theme-secondary-bg-color, #f2f2f2);
       border-radius: 12px;
@@ -45,31 +82,81 @@
       color: var(--tg-theme-hint-color, #999999);
       font-size: 12px;
     }
-    .loading, .error {
+    .loading, .error, .coming-soon {
       text-align: center;
       color: var(--tg-theme-hint-color, #999999);
       margin-top: 40px;
+      padding: 0 20px;
     }
     .error { color: #e74c3c; }
+    .coming-soon .emoji-big {
+      font-size: 48px;
+      display: block;
+      margin-bottom: 12px;
+    }
   </style>
 </head>
 <body>
-  <h1>Crypto.ai</h1>
-  <p class="subtitle">Evidence-based crypto research</p>
-
-  <div id="content" class="loading">Loading assets...</div>
+  <div id="app"></div>
 
   <script>
-    // Tell Telegram we're ready — this removes the loading spinner
-    // Telegram shows before our page finishes rendering.
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand(); // opens the mini app at full height instead of half-screen
 
-    // IMPORTANT: change this to your real API URL once deployed.
-    // For local testing, this points to your FastAPI server running on
-    // your machine.
     const API_BASE_URL = "https://96mj09myqg.execute-api.ap-south-1.amazonaws.com";
+
+    // Only "crypto" is a real, built vertical. Everything else here shows
+    // a "coming soon" screen — same rule as the bot's category menu, kept
+    // in sync so the Mini App and the chat never contradict each other.
+    const CATEGORIES = [
+      { id: "crypto", emoji: "💰", label: "Crypto", built: true },
+      { id: "stocks", emoji: "📈", label: "Stocks", built: false },
+      { id: "banking", emoji: "🏦", label: "Banking", built: false },
+      { id: "insurance", emoji: "🛡️", label: "Insurance", built: false },
+      { id: "loans", emoji: "💳", label: "Loans", built: false },
+    ];
+
+    const app = document.getElementById("app");
+
+    function renderHome() {
+      app.innerHTML = `
+        <h1>Financial Research</h1>
+        <p class="subtitle">Evidence-based research — every answer backed by traceable data.</p>
+        <div id="categories"></div>
+      `;
+      const container = document.getElementById("categories");
+      CATEGORIES.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.className = "category-btn";
+        btn.innerHTML = `<span class="emoji">${cat.emoji}</span><span>${cat.label}</span><span class="arrow">›</span>`;
+        btn.onclick = () => cat.built ? renderCrypto() : renderComingSoon(cat);
+        container.appendChild(btn);
+      });
+    }
+
+    function renderComingSoon(cat) {
+      app.innerHTML = `
+        <button class="back-btn" id="backBtn">‹ Back</button>
+        <div class="coming-soon">
+          <span class="emoji-big">${cat.emoji}</span>
+          <strong>${cat.label} research is coming soon</strong>
+          <p>Not built yet — crypto research is live today.</p>
+        </div>
+      `;
+      document.getElementById("backBtn").onclick = renderHome;
+    }
+
+    function renderCrypto() {
+      app.innerHTML = `
+        <button class="back-btn" id="backBtn">‹ Back</button>
+        <h1>Crypto.ai</h1>
+        <p class="subtitle">Evidence-based crypto research</p>
+        <div id="content" class="loading">Loading assets...</div>
+      `;
+      document.getElementById("backBtn").onclick = renderHome;
+      loadAssets();
+    }
 
     async function loadAssets() {
       const contentEl = document.getElementById("content");
@@ -96,7 +183,7 @@
       }
     }
 
-    loadAssets();
+    renderHome();
   </script>
 </body>
 </html>
